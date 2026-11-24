@@ -1,10 +1,10 @@
 {
   "channel": "dev",
-  "version": "c802986",
-  "commit": "c8029869d34ab1a52d973b5d827775885517d019",
+  "version": "f1f51da",
+  "commit": "f1f51da94201df1e93f037821c97916b2dddc1ba",
   "models": {
     "eti-pg/chladni-models": "main",
     "eti-pg/chladni-models-eksperymenty": "main"
   },
-  "built": "2026-11-24T22:01:23.441Z"
+  "built": "2026-11-24T22:33:17.768Z"
 }
