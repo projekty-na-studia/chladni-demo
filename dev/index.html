@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Figury Chladniego – symulacja i sieć</title>
+    <script type="module" crossorigin src="./assets/index-UOkVYUZP.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-zSGQl7Nw.css">
+  </head>
+  <body>
+    <header>
+      <h1>Figury Chladniego</h1>
+      <p class="lead">
+        Piasek na drgającej płycie zbiera się na liniach węzłowych. Kolejno: symulator cząstek, jego mapa gęstości ρ,
+        predykcja modelu uruchomionego w pętli od tego samego ρ(0) oraz różnica między modelem a symulacją.
+      </p>
+      <p class="site-banner" id="site-banner" hidden></p>
+      <nav class="tabs" role="tablist" aria-label="Widok">
+        <button role="tab" id="tab-btn-sim" aria-selected="true" aria-controls="tab-sim">Symulacja i modele</button>
+        <button role="tab" id="tab-btn-overview" aria-selected="false" aria-controls="tab-overview">Przegląd modeli</button>
+      </nav>
+    </header>
+
+    <main>
+      <div id="tab-sim" role="tabpanel" aria-labelledby="tab-btn-sim">
+        <section class="controls" aria-label="Parametry">
+          <fieldset id="fs-mode">
+            <legend>Mod płyty</legend>
+            <select id="preset" aria-label="Gotowy mod" title="Gotowe mody: z danych treningowych i wyższe, których sieci nie widziały">
+              <option value="custom">własny mod</option>
+            </select>
+            <label title="m – liczba półfal fali stojącej (pierwszy składnik)">m <input id="m" type="number" min="1" max="16" step="1" value="3" /></label>
+            <label title="n – liczba półfal fali stojącej (drugi składnik)">n <input id="n" type="number" min="1" max="16" step="1" value="5" /></label>
+            <label title="a – udział pierwszego składnika fali (a·sin(πnx)·sin(πmy))">a <input id="a" type="number" min="-2" max="2" step="0.1" value="0.7071" /></label>
+            <label title="b – udział drugiego składnika fali (b·sin(πmx)·sin(πny))">b <input id="b" type="number" min="-2" max="2" step="0.1" value="0.7071" /></label>
+          </fieldset>
+          <fieldset id="fs-sim">
+            <legend>Symulator</legend>
+            <span class="fixed-params" title="Stałe, bo wszystkie modele uczono przy tych wartościach i żaden nie dostaje ich na wejściu">siła drgań 0,05 · 20 000 cząstek</span>
+            <label title="Ziarno losowania: ta sama wartość daje ten sam przebieg symulacji">ziarno <input id="seed" type="number" min="0" step="1" value="0" /></label>
+          </fieldset>
+          <fieldset>
+            <legend>Model</legend>
+            <select id="predictor" aria-label="Model" title="Model, który przewiduje kolejne kroki od tego samego stanu początkowego co symulacja">
+              <option value="loading" disabled>Sieci: wczytywanie listy…</option>
+              <option value="diffusion" selected>Równanie dyfuzji (odniesienie)</option>
+              <option value="persistence">Bez zmian (odniesienie)</option>
+            </select>
+            <label id="lbl-compare" title="Drugi model (B) liczony obok pierwszego (A) od tego samego stanu początkowego">
+              porównaj z
+              <select id="predictor-b" aria-label="Model do porównania">
+                <option value="none" selected>— bez porównania —</option>
+              </select>
+            </label>
+            <label id="lbl-diff-target" hidden title="Którą różnicę pokazać w panelu różnicy">
+              różnica
+              <select id="diff-target">
+                <option value="a">A − symulacja</option>
+                <option value="b">B − symulacja</option>
+                <option value="ab">A − B</option>
+              </select>
+            </label>
+            <label id="lbl-sym" title="Uśrednia obie mapy po odbiciach i obrotach, które nie zmieniają |f| – różnice wynikające tylko z losowości znikają">
+              <input id="sym" type="checkbox" checked /><span>uwzględnij symetrię figury (<span id="sym-info"></span>)</span>
+            </label>
+            <label id="lbl-diff" title="Gęstość: zwykła różnica. Względem szumu: różnica podzielona przez oczekiwany szum w kratce – ±1 to sama losowość">
+              skala różnicy
+              <select id="diff-kind">
+                <option value="rho">gęstość piasku</option>
+                <option value="z">w jednostkach szumu</option>
+              </select>
+            </label>
+          </fieldset>
+          <div class="buttons">
+            <button id="play" class="primary">▶ Start</button>
+            <button id="step">Krok</button>
+            <button id="reset">Reset</button>
+            <button id="share" title="Kopiuje adres strony z bieżącymi ustawieniami (mod, modele, widoczny krok) – kto go otworzy, zobaczy ten sam widok">Kopiuj link</button>
+            <label>tempo
+              <select id="speed">
+                <option value="0.3333">wolno</option>
+                <option value="2" selected>normalnie</option>
+                <option value="5">szybko</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="timeline" id="timeline" aria-label="Oś czasu">
+          <input id="time" type="range" min="0" max="0" step="1" value="0" aria-label="Klatka" />
+          <span id="time-out">t = 0</span>
+        </section>
+
+        <section class="panels">
+          <div class="loader" id="loader" hidden role="status" aria-live="polite">
+            <div class="loader-card"><span class="spinner" aria-hidden="true"></span><span id="loader-text"></span></div>
+          </div>
+          <figure>
+            <canvas id="particles" width="512" height="512"></canvas>
+            <figcaption>Symulacja: ziarna piasku<br /><span class="hint">jaśniejsze tło – linie węzłowe, gdzie płyta prawie nie drga</span></figcaption>
+          </figure>
+          <figure>
+            <canvas id="rho-sim" width="512" height="512"></canvas>
+            <figcaption>Symulacja: gęstość piasku<br /><span class="hint">ziarna policzone w siatce 64×64 – to widzi sieć<span id="sim-blur"></span></span><br /><span class="hint" id="color-scale"></span></figcaption>
+          </figure>
+          <figure>
+            <canvas id="rho-pred" width="512" height="512"></canvas>
+            <figcaption><span id="pred-prefix">Model</span>: <span id="pred-label"></span><br /><span class="hint" id="pred-mass"></span><br /><span class="hint" id="pred-meta"></span></figcaption>
+          </figure>
+          <figure id="fig-pred-b" hidden>
+            <canvas id="rho-pred-b" width="512" height="512"></canvas>
+            <figcaption>Model B: <span id="pred-label-b"></span><br /><span class="hint" id="pred-mass-b"></span><br /><span class="hint" id="pred-meta-b"></span></figcaption>
+          </figure>
+          <figure>
+            <canvas id="rho-diff" width="512" height="512"></canvas>
+            <figcaption>
+              <span id="diff-title">Różnica: model − symulacja</span><span id="diff-mode"></span><br />
+              <span class="hint"><span class="swatch over"></span><span id="diff-over">model ma za dużo piasku</span> <span class="swatch under"></span><span id="diff-under">za mało</span>
+              · skala ±<span id="diff-scale">0</span></span>
+            </figcaption>
+          </figure>
+        </section>
+
+        <section class="charts">
+          <canvas id="chart-nodal"></canvas>
+          <canvas id="chart-mse"></canvas>
+          <canvas id="chart-field"></canvas>
+        </section>
+
+        <section class="compare" id="compare" hidden aria-label="Porównanie modeli">
+          <table>
+            <thead>
+              <tr><th></th><th>ilość piasku</th><th id="cmp-err-head">błąd względem symulacji</th><th>piasek na liniach węzłowych</th></tr>
+            </thead>
+            <tbody id="cmp-body"></tbody>
+          </table>
+          <p class="hint" id="cmp-note"></p>
+        </section>
+
+        <section class="about">
+          <h2>Jak to działa</h2>
+          <p class="about-hint">Najedź na akapit, żeby podświetlić elementy, których dotyczy; kliknij, żeby do nich przewinąć.</p>
+          <ul>
+            <li data-show="particles fs-mode fs-sim">
+              <b>Symulator.</b> W każdym kroku cząstka skacze losowo o U(−s, s) w x i y, gdzie s = max(v·|f|, 0,002).
+              Tam, gdzie płyta prawie nie drga, skoki są krótkie i piasek się zbiera. To ta sama reguła, której
+              używamy do generowania danych treningowych.
+            </li>
+            <li data-show="fs-mode particles">
+              <b>Gotowe mody.</b> Lista przy parametrach płyty ma mody z danych treningowych (m ≤ n ≤ 7) i wyższe,
+              których żadna sieć nie widziała. Na wyższych modach widać, czy sieć nauczyła się reguły ruchu piasku,
+              czy tylko zapamiętała znane figury.
+            </li>
+            <li data-show="rho-sim particles">
+              <b>Dane dla sieci.</b> Co 5 kroków zapisujemy mapę gęstości 64×64 o średniej 1. Sieć dostaje parę
+              (ρ(t), f) i przewiduje ρ(t+1), czyli stan o 5 kroków symulatora później.
+            </li>
+            <li data-show="rho-pred chart-nodal chart-mse timeline">
+              <b>Pętla autoregresyjna.</b> Model dostaje tylko ρ(0), a dalej karmi się własnymi przewidywaniami. Wykresy
+              pokazują, jak szybko błąd narasta i czy tempo powstawania figury jest właściwe.
+            </li>
+            <li data-show="chart-mse rho-diff lbl-sym">
+              <b>Błąd a losowość.</b> Nawet idealny model różni się od pojedynczego przebiegu symulacji, bo liczba
+              cząstek w kratce jest losowa: MSE ≈ 64²/N ≈ 0,2 przy 20 000 cząstek (przerywana linia na wykresie).
+              Reguła ruchu zależy tylko od |f|, więc odbicia i obroty płyty, które nie zmieniają |f|, nie zmieniają też
+              rozkładu piasku. Uśrednienie obu map po tych symetriach usuwa różnice typu „więcej w prawym górnym rogu,
+              mniej w lewym dolnym” i obniża poziom szumu nawet 8-krotnie. Panel różnicy wyróżnia wtedy obszar
+              podstawowy – najmniejszą część płyty, z której symetrie odtwarzają całość. Udział w węzłach jest sumą po
+              całej płycie, więc symetria go nie zmienia.
+            </li>
+            <li data-show="chart-field rho-diff lbl-diff">
+              <b>Gdzie model się myli.</b> Szum rośnie z gęstością (σ² ≈ ρ / (λ·k), λ = N/64² cząstek na kratkę, k –
+              liczba kratek uśrednionych po symetriach), więc największe różnice zawsze widać na liniach węzłowych, gdzie
+              jest najwięcej piasku. Wykres „Błąd w funkcji |f|” porównuje błąd z oczekiwanym szumem osobno dla każdej
+              strefy płyty, a tryb „względem szumu” w panelu różnicy dzieli różnicę przez σ: wartości ±1 to sama
+              losowość, kolory nasycone (±3σ) to prawdziwy błąd.
+            </li>
+            <li data-show="rho-pred predictor">
+              <b>Modele.</b> Domyślnie panel modelu pokazuje wytrenowaną sieć CNN; działa ona bezpośrednio w
+              przeglądarce. Dla porównania można wybrać dwa modele odniesienia: „bez zmian” (piasek zostaje tam, gdzie
+              był na początku) i równanie dyfuzji ρ_t = ∇²(Dρ), D = s²/6 – ciągłą wersję reguły ruchu ziaren.
+            </li>
+          </ul>
+        </section>
+      </div>
+      <section id="tab-overview" class="overview" role="tabpanel" aria-labelledby="tab-btn-overview" hidden>
+        <p class="lead">
+          Każdy gotowy mod uruchomiony dla wszystkich modeli z listy, od tego samego rozsypania piasku (ziarno 0).
+          Kolor opisu pod mapą mówi, jak daleko błąd modelu jest od samej losowości symulacji: zielony – blisko,
+          żółty – kilka razy więcej, czerwony – wyraźnie więcej.
+        </p>
+        <div class="overview-bar">
+          <div class="step-switch" id="ov-steps" role="group" aria-label="Krok symulacji">
+            krok
+            <button data-step="50" aria-pressed="false">50</button>
+            <button data-step="150" aria-pressed="false">150</button>
+            <button data-step="500" aria-pressed="true">500</button>
+          </div>
+          <div class="progress" aria-hidden="true"><div class="progress-fill" id="ov-progress"></div></div>
+          <span class="hint" id="ov-status" role="status" aria-live="polite"></span>
+        </div>
+        <div class="overview-grid-wrap"><table class="overview-grid" id="ov-grid"></table></div>
+        <h2>Błąd w czasie (z symetrią)</h2>
+        <div class="ov-legend" id="ov-legend"></div>
+        <div class="overview-charts" id="ov-charts"></div>
+      </section>
+    </main>
+    <footer class="site-footer" id="site-footer" hidden></footer>
+  </body>
+</html>

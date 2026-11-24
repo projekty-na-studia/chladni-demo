@@ -1,0 +1,10 @@
+{
+  "channel": "stable",
+  "version": "strona-v0.1.0",
+  "commit": "c8029869d34ab1a52d973b5d827775885517d019",
+  "models": {
+    "eti-pg/chladni-models": "d071fc608cbb517dea94a3e6cef3db1ab49fa613",
+    "eti-pg/chladni-models-eksperymenty": "73c60d45f9d69b25339ac773028aa777efdfe0d9"
+  },
+  "built": "2026-11-24T22:01:17.646Z"
+}
