@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Figury Chladniego – symulacja i sieć</title>
-    <script type="module" crossorigin src="./assets/index-CsaQyVtQ.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Bxfkr9sr.css">
+    <script type="module" crossorigin src="./assets/index-tN2FOKOv.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Dm65MAj2.css">
   </head>
   <body>
     <header>
@@ -32,9 +32,17 @@
             <div class="row mode-row">
               <label title="m – liczba półfal fali stojącej (pierwszy składnik)">m <input id="m" type="number" min="1" max="16" step="1" value="3" /></label>
               <label title="n – liczba półfal fali stojącej (drugi składnik)">n <input id="n" type="number" min="1" max="16" step="1" value="5" /></label>
-              <label title="a – udział pierwszego składnika fali (a·sin(πnx)·sin(πmy)); b dopasowuje się tak, żeby a² + b² = 1">a <input id="a" type="number" min="-1" max="1" step="0.05" value="0.7071" /></label>
-              <label title="b – udział drugiego składnika fali (b·sin(πmx)·sin(πny)); a dopasowuje się tak, żeby a² + b² = 1">b <input id="b" type="number" min="-1" max="1" step="0.05" value="0.7071" /></label>
-              <button id="mix-equal" type="button" class="small" title="Oba składniki po równo: a = b = 1/√2">a = b</button>
+              <button id="mix-equal" type="button" class="small" title="Oba składniki po równo: a = b = 1/√2 (θ = 45°)">po równo</button>
+            </div>
+            <div class="row mix-row" title="Proporcja składników fali: f = a·sin(πnx)·sin(πmy) + b·sin(πmx)·sin(πny), a = cos θ, b = sin θ. Liczy się tylko proporcja a : b – razem z m, n wyznacza figurę.">
+              <label for="theta">proporcja</label>
+              <input id="theta" type="range" min="-90" max="90" step="5" value="45" list="theta-ticks" aria-label="Proporcja a : b (kąt θ)" />
+              <datalist id="theta-ticks">
+                <option value="-90"></option><option value="-45"></option><option value="0"></option><option value="45"></option><option value="90"></option>
+              </datalist>
+              <output id="theta-out" for="theta"></output>
+              <input id="a" type="hidden" value="0.7071" />
+              <input id="b" type="hidden" value="0.7071" />
             </div>
             <div class="row sim" id="fs-sim">
               <span class="hint fixed-params" title="Stałe, bo wszystkie modele uczono przy tych wartościach i żaden nie dostaje ich na wejściu">symulator: siła drgań 0,05 · 20 000 cząstek</span>
