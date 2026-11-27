@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Figury Chladniego – symulacja i sieć</title>
-    <script type="module" crossorigin src="./assets/index-tN2FOKOv.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Dm65MAj2.css">
+    <script type="module" crossorigin src="./assets/index-CueHXEUE.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-B7C0T3Rq.css">
   </head>
   <body>
     <header>
@@ -18,6 +18,7 @@
       <nav class="tabs" role="tablist" aria-label="Widok">
         <button role="tab" id="tab-btn-sim" aria-selected="true" aria-controls="tab-sim">Symulacja i modele</button>
         <button role="tab" id="tab-btn-overview" aria-selected="false" aria-controls="tab-overview">Przegląd modeli</button>
+        <button role="tab" id="tab-btn-loop" aria-selected="false" aria-controls="tab-loop">Pętla ciągła</button>
       </nav>
     </header>
 
@@ -210,6 +211,75 @@
         <h2>Błąd w czasie (z symetrią)</h2>
         <div class="ov-legend" id="ov-legend"></div>
         <div class="overview-charts" id="ov-charts"></div>
+      </section>
+      <section id="tab-loop" class="loop" role="tabpanel" aria-labelledby="tab-btn-loop" hidden>
+        <p class="lead">
+          Symulator i model liczą się bez końca. Kliknięcie modu zmienia pole drgań <b>w trakcie</b>, bez resetu: od
+          następnego kroku obaj dostają nowe pole, a piasek zostaje tam, gdzie był, i przechodzi do nowej figury.
+          Takiego przejścia sieci nie widziały w treningu – widać tu, czy model jest stabilny na długim horyzoncie
+          i czy po każdej zmianie błąd wraca do poziomu samej losowości.
+        </p>
+        <section class="controls loop-controls" aria-label="Parametry pętli">
+          <fieldset class="card" id="lp-fs-model">
+            <legend>Model</legend>
+            <select id="lp-model" class="wide" aria-label="Model w pętli ciągłej">
+              <option value="" disabled selected>wczytywanie listy…</option>
+            </select>
+            <p class="model-desc hint" id="lp-model-desc" aria-live="polite"></p>
+            <span class="hint fixed-params" title="Stałe, bo wszystkie modele uczono przy tych wartościach i żaden nie dostaje ich na wejściu">symulator: siła drgań 0,05 · 20 000 cząstek · ziarno 0</span>
+          </fieldset>
+          <fieldset class="card" id="lp-fs-modes">
+            <legend>Mod płyty – kliknij, żeby zmienić pole w trakcie</legend>
+            <div class="lp-modes" id="lp-modes" role="group" aria-label="Mod płyty"></div>
+          </fieldset>
+        </section>
+
+        <section class="timeline" aria-label="Sterowanie pętlą">
+          <div class="buttons">
+            <button id="lp-play" class="primary">▶ Start</button>
+            <button id="lp-reset" title="Nowe rozsypanie piasku z rozkładu równomiernego">Reset</button>
+          </div>
+          <span id="lp-status" class="lp-status" role="status" aria-live="off"></span>
+          <span id="lp-rate" class="hint lp-rate"></span>
+          <div class="buttons">
+            <label>tempo
+              <select id="lp-speed">
+                <option value="0.3333">wolno</option>
+                <option value="2" selected>normalnie</option>
+                <option value="5">szybko</option>
+              </select>
+            </label>
+            <button id="lp-share" title="Kopiuje adres strony z tą zakładką, modelem i modem">Kopiuj link</button>
+          </div>
+        </section>
+
+        <section class="panels">
+          <figure>
+            <canvas id="lp-particles" width="512" height="512"></canvas>
+            <figcaption>Symulacja: ziarna piasku<br /><span class="hint">jaśniejsze tło – linie węzłowe bieżącego modu</span></figcaption>
+          </figure>
+          <figure>
+            <canvas id="lp-rho-sim" width="512" height="512"></canvas>
+            <figcaption>Symulacja: gęstość piasku<br /><span class="hint">skala kolorów dopasowuje się płynnie do figury</span></figcaption>
+          </figure>
+          <figure>
+            <canvas id="lp-rho-pred" width="512" height="512"></canvas>
+            <figcaption>Model: <span id="lp-pred-label"></span><br /><span class="hint" id="lp-pred-mass"></span></figcaption>
+          </figure>
+          <figure>
+            <canvas id="lp-rho-diff" width="512" height="512"></canvas>
+            <figcaption>
+              Różnica: model − symulacja, uśredniona po symetriach<br />
+              <span class="hint"><span class="swatch over"></span>za dużo piasku <span class="swatch under"></span>za mało
+              · skala ±<span id="lp-diff-scale">0</span></span>
+            </figcaption>
+          </figure>
+        </section>
+
+        <section class="charts loop-charts">
+          <canvas id="lp-chart-mse"></canvas>
+          <canvas id="lp-chart-nodal"></canvas>
+        </section>
       </section>
     </main>
     <footer class="site-footer" id="site-footer" hidden></footer>
